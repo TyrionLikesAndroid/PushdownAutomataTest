@@ -1,8 +1,14 @@
+import java.util.LinkedList;
+import java.util.Map;
+
 public class PushdownAutomaton {
 
-    public PushdownAutomaton(String cfg)
+    ContextFreeGrammarLoader cfgLoader;
+
+    public PushdownAutomaton(ContextFreeGrammarLoader loader)
     {
-        System.out.println("Pushdown Automaton constructed for " + cfg);
+        this.cfgLoader = loader;
+        System.out.println("Pushdown Automaton constructed for " + cfgLoader.getPath());
     }
 
     public boolean accept(String inString)

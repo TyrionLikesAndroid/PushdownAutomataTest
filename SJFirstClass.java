@@ -10,7 +10,11 @@ public class SJFirstClass {
 
         System.out.println("Creating Pushdown Automata Test with CFG=" + cfg + " inString=" + inString);
 
-        PushdownAutomaton pda = new PushdownAutomaton(cfg);
+        ContextFreeGrammarLoader cfgLoader = new ContextFreeGrammarLoader(cfg);
+        if(! cfgLoader.load())
+            System.out.println("Failure to load CFG= " + cfg);
+
+        PushdownAutomaton pda = new PushdownAutomaton(cfgLoader);
         boolean output = pda.accept(inString);
         System.out.println("PDA accept for: " + inString + " returns: " + ((output) ? "true":"false"));
     }
