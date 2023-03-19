@@ -8,7 +8,12 @@ public class CFGSymbol {
         //System.out.println("New CFGSymbol for " + symbol);
         this.symbol = symbol;
 
-        //System.out.println(this.print() + " isTerminal(" + (this.isTerminal()?"T":"F") + ")");
+        //System.out.println(this.print() + " isTerminal(" + (this.isTerminal()?"T":"F") + ")" + " isEpsilon(" + (this.isEpsilon()?"T":"F") + ")");
+    }
+
+    public boolean isEpsilon() {
+
+        return String.valueOf(symbol).equals("ε");
     }
 
     public boolean isTerminal() {

@@ -1,4 +1,5 @@
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.io.*;
 
@@ -48,10 +49,11 @@ public class ContextFreeGrammarLoader {
             System.out.println("CFG file " + path + " exists");
 
             try {
-                Scanner myReader = new Scanner(cfgFile);
+                BufferedReader bufferedReader = new BufferedReader(
+                        new InputStreamReader(new FileInputStream(cfgFile), StandardCharsets.UTF_16));
 
-                while (myReader.hasNextLine()) {
-                    String cfgLine = myReader.nextLine();
+                String cfgLine;
+                while ((cfgLine = bufferedReader.readLine()) != null) {
 
                     // Parse the rule.  It will have a key value that should be a capitol letter and
                     // one or more rules to follow
@@ -107,7 +109,7 @@ public class ContextFreeGrammarLoader {
                 }
 
                 printCFGRules();
-                myReader.close();
+                bufferedReader.close();
             } catch (Exception e)
             {
                 System.out.println("Error loading config file");
