@@ -6,9 +6,15 @@ import java.io.*;
 public class ContextFreeGrammarLoader {
 
     private final String path;
-    public Map<String,LinkedList<CFGWord>> grammarDictionary = new HashMap<>();
+    private Map<String,LinkedList<CFGWord>> grammarDictionary = new HashMap<>();
     private final String ruleDelimeter = "->";
     private final String wordDelimeter = ":";
+    public class CFGRule {
+         public String id;
+         public CFGWord word;
+         public CFGRule(String id, CFGWord word) { this.id=id; this.word=word; }
+    };
+    private CFGRule startRule = null;
 
     public ContextFreeGrammarLoader(String path) {
         this.path = path;
@@ -23,6 +29,8 @@ public class ContextFreeGrammarLoader {
     {
         return path;
     }
+
+    public CFGRule getStartRule() { return startRule; }
 
     public void printCFGRules()
     {
@@ -102,6 +110,13 @@ public class ContextFreeGrammarLoader {
                             // linked list
                             //System.out.println("Adding new rule " + ruleVariable);
                             grammarDictionary.put(ruleVariable, ruleList);
+                        }
+
+                        // Set our starting rule if needed
+                        if(startRule == null)
+                        {
+                            startRule = new CFGRule(ruleVariable, ruleList.peekFirst());
+                            System.out.println("Start rule is " + ruleVariable + "->" + ruleList.peekFirst().print());
                         }
 
                         out = true;

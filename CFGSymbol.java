@@ -1,7 +1,7 @@
 
 public class CFGSymbol {
 
-    private final char symbol;
+    public final char symbol;
 
     public CFGSymbol(char symbol) {
 
@@ -14,6 +14,11 @@ public class CFGSymbol {
     public boolean isEpsilon() {
 
         return String.valueOf(symbol).equals("ε");
+    }
+
+    public boolean isEndOfString() {
+
+        return String.valueOf(symbol).equals("$");
     }
 
     public boolean isTerminal() {
