@@ -10,6 +10,14 @@ public class PDARuleProcessor {
     static private int startId = 0;
     public int instanceId;
 
+    private enum EvalResult
+    {
+        TERMINAL_SUCCESS,
+        TERMINAL_FAILURE,
+        CONTINUE_NO_PROGRESS,
+        CONTINUE_PROGRESS
+    }
+
     public PDARuleProcessor(PushdownAutomaton parent, String input, int pos, Map<String, LinkedList<CFGWord>> dict, Stack<CFGSymbol> stack)
     {
         this.instanceId = startId++;
@@ -26,41 +34,40 @@ public class PDARuleProcessor {
     {
         System.out.println("PDARuleProcessor[" + instanceId + "] running");
 
-        // Evaluate the top of the stack and see if we can make any progress on our input string
-        boolean evalResult = evaluate();
-        while (evalResult) { evalResult = evaluate(); }
+        // Evaluate our current state, which will analyze the top of the stack and see if we
+        // can make any progress with the input string.  We will continue as long as things progress
+        EvalResult result = evaluate();
+        while (result == EvalResult.CONTINUE_PROGRESS) { result = evaluate(); }
 
-        // If we are done evaluating, the top of the stack is either a rule variable
-        // or something we can't match. See if we have any rules that match this variable
+        // If we are done evaluating, the top of the stack is either a rule variable, or we have
+        // reached an exit condition.  Handle the exit conditions first
+        if(result == EvalResult.TERMINAL_SUCCESS)
+        {
+            System.out.println("Exiting because string was ACCEPTED and stack is empty");
+            parent.recordResult(true, instanceId);
+            return;
+        }
+        if(result == EvalResult.TERMINAL_FAILURE)
+        {
+            System.out.println("Exiting because of terminal failure condition");
+            parent.recordResult(false, instanceId);
+            return;
+        }
+
+        // There is still work to do, so peek the top of the stack and start looking for
+        // a rule variable replacement
         CFGSymbol aSym = cfgStack.peek();
         //System.out.println("run() peek=" + aSym.print());
 
-        // Check all the exit conditions and bail out if needed
-        if(aSym.isEndOfString() && (inputPosition == inputString.length()))
-        {
-            System.out.println("Bailing out of run() because string was ACCEPTED and stack is empty");
-            return;
-        }
-        if(inputPosition >= inputString.length())
-        {
-            System.out.println("Bailing out of run() because input string is exhausted");
-            return;
-        }
-        if(aSym.isTerminal())
-        {
-            System.out.println("Bailing from run() due to unhandled terminal [" + aSym.print() + "] nextInput[" + inputString.charAt(inputPosition) + "]");
-            return;
-        }
-
-        // If we get here, the peek identified a variable
         LinkedList<CFGWord> rules = grammarDictionary.get(aSym.print());
         int numRules = rules.size();
-
         if(numRules == 0)
         {
             // Nothing to do, this RP is done, or we have a problem in the CFG
-            System.out.println("No rules associated with " + aSym);
-        } else
+            System.out.println("Exiting because of CFG has no rule for " + aSym);
+            parent.recordResult(false, instanceId);
+        }
+        else
         {
             // Pop the top of the stack since we are replacing this topmost rule
             CFGSymbol out = cfgStack.pop();
@@ -78,6 +85,10 @@ public class PDARuleProcessor {
                 PDARuleProcessor newRp = new PDARuleProcessor(parent,inputString, inputPosition, grammarDictionary, newStack);
                 parent.addWorker(newRp);
             }
+
+            // Nothing left to do, this will be an incomplete worker but there is hope
+            System.out.println("Exiting with valid child workers still in progress");
+            parent.recordResult(false, instanceId);
         }
     }
 
@@ -110,28 +121,39 @@ public class PDARuleProcessor {
         return newStack;
     }
 
-    private boolean evaluate()
+    private EvalResult evaluate()
     {
-        //Look at the top of the stack
-        boolean out = false;
+        //Assume that no progress will be made unless indicated below
+        EvalResult result = EvalResult.CONTINUE_NO_PROGRESS;
+
+        // Look at the top of the stack
         CFGSymbol aSym = cfgStack.peek();
         //System.out.println("evaluate() peek=" + aSym.print());
 
-        // Check and see if the string is empty, which means we have failed and have to bail
+        // Check for terminal cases first
         if(aSym.isEndOfString() && (inputPosition == inputString.length()))
         {
+            // If we see end of string symbol on the stack AND we are indeed at the end
+            // of the input string, we are successful
             System.out.println("**ACCEPTED**");
+            result = EvalResult.TERMINAL_SUCCESS;
         }
         else if(inputPosition >= inputString.length())
         {
+            // We still have some stuff on the stack, but we are out of input string.
+            // This is a hard failure case with no rewind, so this path is done.
             System.out.println("**FAILURE** Input string has been exhausted");
+            result = EvalResult.TERMINAL_FAILURE;
         }
         else if(aSym.isEpsilon())
         {
-            System.out.println("TO DO: Need to write epsilon case");
-        } else if(aSym.isTerminal())
+            // This should never happen, so send a failure and bail so we can debug it
+            System.out.println("**FAILURE** This should never happen go and debug");
+            result = EvalResult.TERMINAL_FAILURE;
+        }
+        else if(aSym.isTerminal())
         {
-            // Compare our terminal to the top of the string since this is right-handed validation
+            // Compare our stack terminal to the top of the string since this is right-handed validation
             if(aSym.symbol == inputString.charAt(inputPosition))
             {
                 System.out.println("MATCH stack top=" + aSym.symbol + " input char=" + inputString.charAt(inputPosition));
@@ -140,13 +162,18 @@ public class PDARuleProcessor {
                 CFGSymbol outSym = cfgStack.pop();
                 //System.out.println("eval() Popped " + outSym.print());
                 inputPosition++;
-                out = true;
+
+                // We made some progress on our input, so report appropriately
+                result = EvalResult.CONTINUE_PROGRESS;
+            }
+            else
+            {
+                // The input string terminal doesn't match with our stack symbol.  We can't progress any farther
+                System.out.println("**FAILURE** Mismatching terminals in stack/input");
+                result = EvalResult.TERMINAL_FAILURE;
             }
         }
 
-        if(! out)
-            System.out.println("Evaluating input, nothing able to progress");
-
-        return out;
+        return result;
     }
 }

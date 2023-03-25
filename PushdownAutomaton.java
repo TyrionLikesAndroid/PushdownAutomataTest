@@ -1,3 +1,4 @@
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Stack;
@@ -6,6 +7,13 @@ public class PushdownAutomaton {
 
     ContextFreeGrammarLoader cfgLoader;
     LinkedList<PDARuleProcessor> activeWorkers = new LinkedList<>();
+    LinkedList<PDAWorkerResult> finalResults = new LinkedList<>();
+
+    public class PDAWorkerResult {
+        public int id;
+        public boolean result;
+        public PDAWorkerResult(int id, boolean result) { this.id=id; this.result=result; }
+    };
 
     public PushdownAutomaton(ContextFreeGrammarLoader loader)
     {
@@ -43,7 +51,8 @@ public class PushdownAutomaton {
         addWorker(new PDARuleProcessor(this, inString,0,cfgLoader.getGrammarDictionary(),startingStack));
         execute();
 
-        return true;  // For now
+        // Execution is complete, so review the results and return the summary answer
+        return evaluateResults();
     }
 
     private void execute()
@@ -53,5 +62,34 @@ public class PushdownAutomaton {
             PDARuleProcessor aWorker = activeWorkers.remove();
             aWorker.run();
         }
+    }
+
+    protected void recordResult(boolean acceptResult, int id)
+    {
+        finalResults.add(new PDAWorkerResult(id, acceptResult));
+    }
+
+    private boolean evaluateResults()
+    {
+        boolean output = false;
+
+        // Review the results and see if any of them were successful
+        Iterator<PDAWorkerResult> it = finalResults.iterator();
+        while(it.hasNext())
+        {
+            PDAWorkerResult workerResult = it.next();
+            System.out.println("PDARuleProcessor[" + workerResult.id + "] result=" + (workerResult.result?"T":"F"));
+
+            if(output && workerResult.result)
+            {
+                System.out.println("This is an ambiguous grammar since there are multiple valid derivations");
+            }
+            else if ((! output) && workerResult.result)
+            {
+                System.out.println("This input string is accepted and has at least one valid derivation");
+                output = true;
+            }
+        }
+        return output;
     }
 }
