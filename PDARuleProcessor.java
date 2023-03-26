@@ -92,7 +92,7 @@ public class PDARuleProcessor {
         }
     }
 
-    private void pushStackRule(Stack<CFGSymbol> aStack, CFGWord cfgWord)
+    static public void pushStackRule(Stack<CFGSymbol> aStack, CFGWord cfgWord)
     {
         LinkedList<CFGSymbol> symbols = cfgWord.getSymbols();
 

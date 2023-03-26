@@ -40,15 +40,23 @@ public class PushdownAutomaton {
             }
         }
 
-        // Create stack and push our start rule onto the stack with the $
-        Stack<CFGSymbol> startingStack = new Stack<>();
-        startingStack.push(new CFGSymbol('$'));
-        startingStack.push(new CFGSymbol(cfgLoader.getStartRule().id.charAt(0)));
+        // Iterate through the start rules and initialize a worker based on each one
+        Iterator<ContextFreeGrammarLoader.CFGRule> startIter = cfgLoader.getStartRules().iterator();
+        while(startIter.hasNext()){
 
-        System.out.println("Initial stack (" + startingStack + ")");
+            // Create stack and push our start rule onto the stack with the $
+            ContextFreeGrammarLoader.CFGRule aRule = startIter.next();
+            Stack<CFGSymbol> startingStack = new Stack<>();
+            startingStack.push(new CFGSymbol('$'));
+            PDARuleProcessor.pushStackRule(startingStack, aRule.word);
 
-        // Create a PDA Rule Processor and tell it to run
-        addWorker(new PDARuleProcessor(this, inString,0,cfgLoader.getGrammarDictionary(),startingStack));
+            System.out.println("Initial stack (" + startingStack + ")");
+
+            // Create a PDA Rule Processor and tell it to run
+            addWorker(new PDARuleProcessor(this, inString, 0, cfgLoader.getGrammarDictionary(), startingStack));
+        }
+
+        // Start the execute loop
         execute();
 
         // Execution is complete, so review the results and return the summary answer

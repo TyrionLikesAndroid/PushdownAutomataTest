@@ -6,15 +6,15 @@ import java.io.*;
 public class ContextFreeGrammarLoader {
 
     private final String path;
-    private Map<String,LinkedList<CFGWord>> grammarDictionary = new HashMap<>();
-    private final String ruleDelimeter = "->";
-    private final String wordDelimeter = ":";
+    private final Map<String,LinkedList<CFGWord>> grammarDictionary = new HashMap<>();
+    public static final String ruleDelimeter = "->";
+    public static final String wordDelimeter = ":";
     public class CFGRule {
          public String id;
          public CFGWord word;
          public CFGRule(String id, CFGWord word) { this.id=id; this.word=word; }
     };
-    private CFGRule startRule = null;
+    private final LinkedList<CFGRule> startRules = new LinkedList<>();
 
     public ContextFreeGrammarLoader(String path) {
         this.path = path;
@@ -30,7 +30,7 @@ public class ContextFreeGrammarLoader {
         return path;
     }
 
-    public CFGRule getStartRule() { return startRule; }
+    public LinkedList<CFGRule> getStartRules() { return startRules; }
 
     public void printCFGRules()
     {
@@ -77,6 +77,10 @@ public class ContextFreeGrammarLoader {
                         // Create our linked list for the ruleset
                         LinkedList<CFGWord> ruleList = new LinkedList<>();
 
+                        // See if we have start rules yet.  If not, we need to fill them based on
+                        // the first line in the grammar
+                        boolean writeStartRules = startRules.isEmpty();
+
                         // See if this is a complex ruleset or a simple ruleset
                         int wordDelimeterPos = ruleSet.indexOf(wordDelimeter);
                         if(wordDelimeterPos != NOT_FOUND)
@@ -87,13 +91,27 @@ public class ContextFreeGrammarLoader {
                             for(int i = 0; i < complexRules.length; i++)
                             {
                                 //System.out.println("Delimeter= " + wordDelimeter + " Chunk=" + complexRules[i]);
-                                ruleList.add(new CFGWord(complexRules[i]));
+                                CFGWord newWord = new CFGWord(complexRules[i]);
+                                ruleList.add(newWord);
+
+                                // Write the start rule if needed
+                                if(writeStartRules) {
+                                    startRules.add(new CFGRule(ruleVariable, newWord));
+                                    System.out.println("Compound start rule is " + ruleVariable + "->" + newWord.print());
+                                }
                             }
                         }
                         else
                         {
                             // This is a simple rule, so just add it to our linked list
-                            ruleList.add(new CFGWord(ruleSet));
+                            CFGWord newWord = new CFGWord(ruleSet);
+                            ruleList.add(newWord);
+
+                            // Write the start rule if needed
+                            if(writeStartRules) {
+                                startRules.add(new CFGRule(ruleVariable, newWord));
+                                System.out.println("Simple start rule is " + ruleVariable + "->" + newWord.print());
+                            }
                         }
 
                         // See if we have this rule variable in our map
@@ -110,13 +128,6 @@ public class ContextFreeGrammarLoader {
                             // linked list
                             //System.out.println("Adding new rule " + ruleVariable);
                             grammarDictionary.put(ruleVariable, ruleList);
-                        }
-
-                        // Set our starting rule if needed
-                        if(startRule == null)
-                        {
-                            startRule = new CFGRule(ruleVariable, ruleList.peekFirst());
-                            System.out.println("Start rule is " + ruleVariable + "->" + ruleList.peekFirst().print());
                         }
 
                         out = true;
