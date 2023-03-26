@@ -11,7 +11,10 @@ public class PushdownAutomaton {
     public class PDAWorkerResult {
         public int id;
         public boolean result;
-        public PDAWorkerResult(int id, boolean result) { this.id=id; this.result=result; }
+        LinkedList<String> derivationTree;
+
+        public PDAWorkerResult(int id, boolean result, LinkedList<String> derivation)
+        { this.id=id; this.result=result; this.derivationTree = derivation; }
     };
 
     public PushdownAutomaton(ContextFreeGrammarLoader loader)
@@ -43,16 +46,22 @@ public class PushdownAutomaton {
         Iterator<ContextFreeGrammarLoader.CFGRule> startIter = cfgLoader.getStartRules().iterator();
         while(startIter.hasNext()){
 
-            // Create stack and push our start rule onto the stack with the $
             ContextFreeGrammarLoader.CFGRule aRule = startIter.next();
+
+            // Create stack and push our start rule onto the stack with the $
             Stack<CFGSymbol> startingStack = new Stack<>();
             startingStack.push(new CFGSymbol('$'));
             PDARuleProcessor.pushStackRule(startingStack, aRule.word);
-
             System.out.println("Initial stack (" + startingStack + ")");
 
+            // Start the derivation tree based on these first two steps
+            LinkedList<String> derivation = new LinkedList<>();
+            derivation.add(aRule.id);
+            derivation.add(aRule.word.print());
+
             // Create a PDA Rule Processor and tell it to run
-            addWorker(new PDARuleProcessor(this, inString, 0, cfgLoader.getGrammarDictionary(), startingStack));
+            addWorker(new PDARuleProcessor(this, inString, 0, cfgLoader.getGrammarDictionary(),
+                    startingStack, derivation, ""));
         }
 
         // Start the execute loop
@@ -84,9 +93,9 @@ public class PushdownAutomaton {
         }
     }
 
-    protected void recordResult(boolean acceptResult, int id)
+    protected void recordResult(boolean acceptResult, int id, LinkedList<String> derivation)
     {
-        finalResults.add(new PDAWorkerResult(id, acceptResult));
+        finalResults.add(new PDAWorkerResult(id, acceptResult, derivation));
     }
 
     private boolean evaluateResults()
@@ -98,7 +107,7 @@ public class PushdownAutomaton {
         while(it.hasNext())
         {
             PDAWorkerResult workerResult = it.next();
-            System.out.println("PDARuleProcessor[" + workerResult.id + "] result=" + (workerResult.result?"T":"F"));
+            //System.out.println("PDARuleProcessor[" + workerResult.id + "] result=" + (workerResult.result?"T":"F"));
 
             if(output && workerResult.result)
             {
@@ -107,6 +116,13 @@ public class PushdownAutomaton {
             else if ((! output) && workerResult.result)
             {
                 System.out.println("This input string is accepted and has at least one valid derivation");
+
+                // Print out the successful derivation tree
+                Iterator<String> deriveIter = workerResult.derivationTree.iterator();
+                while(deriveIter.hasNext()) {
+                    System.out.println("Derivation Step = " + deriveIter.next());
+                }
+
                 output = true;
             }
         }

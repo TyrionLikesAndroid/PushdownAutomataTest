@@ -9,6 +9,8 @@ public class PDARuleProcessor {
     PushdownAutomaton parent;
     static private int startId = 0;
     public int instanceId;
+    LinkedList<String> derivationTree;
+    private String terminalProgress;
 
     private enum EvalResult
     {
@@ -18,7 +20,8 @@ public class PDARuleProcessor {
         CONTINUE_PROGRESS
     }
 
-    public PDARuleProcessor(PushdownAutomaton parent, String input, int pos, Map<String, LinkedList<CFGWord>> dict, Stack<CFGSymbol> stack)
+    public PDARuleProcessor(PushdownAutomaton parent, String input, int pos, Map<String, LinkedList<CFGWord>> dict,
+                            Stack<CFGSymbol> stack, LinkedList<String> derivation, String terminalProgress)
     {
         this.instanceId = startId++;
         this.parent = parent;
@@ -26,6 +29,8 @@ public class PDARuleProcessor {
         this.inputPosition = pos;
         this.grammarDictionary = dict;
         this.cfgStack = stack;
+        this.derivationTree = derivation;
+        this.terminalProgress = terminalProgress;
 
         System.out.println("PDARuleProcessor[" + instanceId + "] constructed");
     }
@@ -44,13 +49,13 @@ public class PDARuleProcessor {
         if(result == EvalResult.TERMINAL_SUCCESS)
         {
             System.out.println("Exiting because string was ACCEPTED and stack is empty");
-            parent.recordResult(true, instanceId);
+            parent.recordResult(true, instanceId, derivationTree);
             return;
         }
         if(result == EvalResult.TERMINAL_FAILURE)
         {
             System.out.println("Exiting because of terminal failure condition");
-            parent.recordResult(false, instanceId);
+            parent.recordResult(false, instanceId, derivationTree);
             return;
         }
 
@@ -65,7 +70,7 @@ public class PDARuleProcessor {
         {
             // Nothing to do, this RP is done, or we have a problem in the CFG
             System.out.println("Exiting because of CFG has no rule for " + aSym);
-            parent.recordResult(false, instanceId);
+            parent.recordResult(false, instanceId, derivationTree);
         }
         else
         {
@@ -81,14 +86,28 @@ public class PDARuleProcessor {
                 Stack<CFGSymbol> newStack = cloneStack(cfgStack);
                 pushStackRule(newStack, rules.get(i));
 
+                // Update the derivation tree with the latest progress
+                ListIterator<CFGSymbol> newIter = newStack.listIterator(newStack.size());
+                String newDeriveString = terminalProgress;
+                while(newIter.hasPrevious()) {
+                    CFGSymbol anotherSym = newIter.previous();
+                    if(! anotherSym.isEndOfString())
+                        newDeriveString = newDeriveString.concat(anotherSym.print());
+                }
+
+                // Make a copy of the derivation tree
+                LinkedList<String> newDerivation = cloneDerivation(derivationTree);
+                newDerivation.add(newDeriveString);
+
                 //Make a new PDARuleProcessor and put it in the working list
-                PDARuleProcessor newRp = new PDARuleProcessor(parent,inputString, inputPosition, grammarDictionary, newStack);
+                PDARuleProcessor newRp = new PDARuleProcessor(parent,inputString, inputPosition, grammarDictionary,
+                        newStack, newDerivation, terminalProgress);
                 parent.addWorker(newRp);
             }
 
             // Nothing left to do, this will be an incomplete worker but there is hope
             System.out.println("Exiting with valid child workers still in progress");
-            parent.recordResult(false, instanceId);
+            parent.recordResult(false, instanceId, derivationTree);
         }
     }
 
@@ -109,7 +128,7 @@ public class PDARuleProcessor {
     private Stack<CFGSymbol> cloneStack(Stack<CFGSymbol> oldStack)
     {
         Stack<CFGSymbol> newStack = new Stack<>();
-        System.out.println("Clone Old stack (" + oldStack + ") size = " + oldStack.size());
+        System.out.println("Clone old stack (" + oldStack + ") size = " + oldStack.size());
 
         for(int i = 0; i < oldStack.size(); i++)
         {
@@ -119,6 +138,20 @@ public class PDARuleProcessor {
             System.out.println("Clone Stack(" + newStack + ") Pushed " + in.print());
         }
         return newStack;
+    }
+
+    private LinkedList<String> cloneDerivation(LinkedList<String> oldDerivation)
+    {
+        LinkedList<String> newDerivation = new LinkedList<>();
+        System.out.println("Clone old derivation of size = " + oldDerivation.size());
+
+        Iterator<String> iter = oldDerivation.iterator();
+        while(iter.hasNext())
+        {
+            //System.out.println("Clone oldStack[" + i + "]=" + oldStack.elementAt(i).print());
+            newDerivation.add(iter.next());
+        }
+        return newDerivation;
     }
 
     private EvalResult evaluate()
@@ -162,6 +195,7 @@ public class PDARuleProcessor {
                 CFGSymbol outSym = cfgStack.pop();
                 //System.out.println("eval() Popped " + outSym.print());
                 inputPosition++;
+                terminalProgress = terminalProgress.concat(outSym.print());
 
                 // We made some progress on our input, so report appropriately
                 result = EvalResult.CONTINUE_PROGRESS;
