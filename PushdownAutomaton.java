@@ -1,6 +1,5 @@
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Stack;
 
 public class PushdownAutomaton {
@@ -65,10 +64,23 @@ public class PushdownAutomaton {
 
     private void execute()
     {
+        // Create a safety net.  Since this is a brute force PDA program, it can definitely run
+        // in a loop for a number of languages.  Cap the worker execution at 2000 iterations for now.
+        int safetyNet = 2000;
+        int safetyCounter = 1;
+
+        // Run loop for all of the active workers
         while(activeWorkers.size() > 0)
         {
             PDARuleProcessor aWorker = activeWorkers.remove();
             aWorker.run();
+            safetyCounter++;
+
+            if(safetyCounter > safetyNet)
+            {
+                System.out.println("Exiting due to safety net");
+                return;
+            }
         }
     }
 
