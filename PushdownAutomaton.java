@@ -109,23 +109,25 @@ public class PushdownAutomaton {
             PDAWorkerResult workerResult = it.next();
             //System.out.println("PDARuleProcessor[" + workerResult.id + "] result=" + (workerResult.result?"T":"F"));
 
-            if(output && workerResult.result)
+            if(workerResult.result)
             {
-                System.out.println("This is an ambiguous grammar since there are multiple valid derivations");
-            }
-            else if ((! output) && workerResult.result)
-            {
-                System.out.println("This input string is accepted and has at least one valid derivation");
+                System.out.println("Successful Derivation from PDARuleProcessor[" + workerResult.id + "]");
+                printDerivationTree(workerResult.derivationTree);
 
-                // Print out the successful derivation tree
-                Iterator<String> deriveIter = workerResult.derivationTree.iterator();
-                while(deriveIter.hasNext()) {
-                    System.out.println("Derivation Step = " + deriveIter.next());
-                }
-
-                output = true;
+                if(output)
+                    System.out.println("This is an ambiguous grammar since there are multiple valid derivations");
+                else
+                    output = true;
             }
         }
         return output;
+    }
+
+    private void printDerivationTree(LinkedList<String> dTree)
+    {
+        Iterator<String> deriveIter = dTree.iterator();
+        while(deriveIter.hasNext()) {
+            System.out.println("Derivation Step = " + deriveIter.next());
+        }
     }
 }
