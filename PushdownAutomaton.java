@@ -7,6 +7,7 @@ public class PushdownAutomaton {
     ContextFreeGrammarLoader cfgLoader;
     LinkedList<PDARuleProcessor> activeWorkers = new LinkedList<>();
     LinkedList<PDAWorkerResult> finalResults = new LinkedList<>();
+    static int safetyNet = 5000;
 
     public class PDAWorkerResult {
         public int id;
@@ -77,8 +78,8 @@ public class PushdownAutomaton {
     private void execute()
     {
         // Create a safety net.  Since this is a brute force PDA program, it can definitely run
-        // in a loop for a number of languages.  Cap the worker execution at 2000 iterations for now.
-        int safetyNet = 2000;
+        // in a loop for a number of grammars, so we need a way to bail
+        int safetyNet = PushdownAutomaton.safetyNet;
         int safetyCounter = 1;
 
         // Run loop for all of the active workers

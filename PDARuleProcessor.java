@@ -59,6 +59,11 @@ public class PDARuleProcessor {
             return;
         }
 
+        // Check on the safety net.  If we have already created all the instances we want to
+        // process, don't bother creating any more that won't process
+        if(PDARuleProcessor.startId > PushdownAutomaton.safetyNet)
+            return;
+
         // There is still work to do, so peek the top of the stack and start looking for
         // a rule variable replacement
         CFGSymbol aSym = cfgStack.peek();
