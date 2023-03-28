@@ -7,7 +7,7 @@ public class PDARuleProcessor {
     Map<String, LinkedList<CFGWord>> grammarDictionary;
     Stack<CFGSymbol> cfgStack;
     PushdownAutomaton parent;
-    static private int startId = 0;
+    static public int startId = 0;
     public int instanceId;
     LinkedList<String> derivationTree;
     private String terminalProgress;
@@ -32,12 +32,12 @@ public class PDARuleProcessor {
         this.derivationTree = derivation;
         this.terminalProgress = terminalProgress;
 
-        System.out.println("PDARuleProcessor[" + instanceId + "] constructed");
+        //System.out.println("PDARuleProcessor[" + instanceId + "] constructed");
     }
 
     public void run()
     {
-        System.out.println("PDARuleProcessor[" + instanceId + "] running");
+        //System.out.println("PDARuleProcessor[" + instanceId + "] running");
 
         // Evaluate our current state, which will analyze the top of the stack and see if we
         // can make any progress with the input string.  We will continue as long as things progress
@@ -48,13 +48,13 @@ public class PDARuleProcessor {
         // reached an exit condition.  Handle the exit conditions first
         if(result == EvalResult.TERMINAL_SUCCESS)
         {
-            System.out.println("Exiting because string was ACCEPTED and stack is empty");
+            //System.out.println("Exiting run() because string was ACCEPTED and stack is empty");
             parent.recordResult(true, instanceId, derivationTree);
             return;
         }
         if(result == EvalResult.TERMINAL_FAILURE)
         {
-            System.out.println("Exiting because of terminal failure condition");
+            //System.out.println("Exiting run() because of terminal failure condition");
             parent.recordResult(false, instanceId, derivationTree);
             return;
         }
@@ -69,7 +69,7 @@ public class PDARuleProcessor {
         if(numRules == 0)
         {
             // Nothing to do, this RP is done, or we have a problem in the CFG
-            System.out.println("Exiting because of CFG has no rule for " + aSym);
+            //System.out.println("Exiting run() because of CFG has no rule for " + aSym);
             parent.recordResult(false, instanceId, derivationTree);
         }
         else
@@ -81,10 +81,15 @@ public class PDARuleProcessor {
             // Iterate over all the rules and setup new RP classes
             for(int i = 0; i < rules.size(); i++)
             {
-                System.out.println("Rules iteration " + i + ", "+ rules.get(i).print());
+                //System.out.println("Rules iteration " + i + ", "+ rules.get(i).print());
+
                 // Make a copy of the stack
                 Stack<CFGSymbol> newStack = cloneStack(cfgStack);
-                pushStackRule(newStack, rules.get(i));
+
+                // If the focal rule is epsilon, just skip the part where we push the
+                // new stack rule and continue.  There is nothing to replace for epsilon
+                if(! rules.get(i).isEpsilon())
+                    pushStackRule(newStack, rules.get(i));
 
                 // Update the derivation tree with the latest progress
                 ListIterator<CFGSymbol> newIter = newStack.listIterator(newStack.size());
@@ -95,8 +100,11 @@ public class PDARuleProcessor {
                         newDeriveString = newDeriveString.concat(anotherSym.print());
                 }
 
-                // Make a copy of the derivation tree
+                // Make a copy of the derivation tree, giving some extra traceability for epsilon
                 LinkedList<String> newDerivation = cloneDerivation(derivationTree);
+                if(rules.get(i).isEpsilon())
+                    newDeriveString = newDeriveString.concat(" (" + out.print() + "=ε)");
+
                 newDerivation.add(newDeriveString);
 
                 //Make a new PDARuleProcessor and put it in the working list
@@ -106,7 +114,7 @@ public class PDARuleProcessor {
             }
 
             // Nothing left to do, this will be an incomplete worker but there is hope
-            System.out.println("Exiting with valid child workers still in progress");
+            //System.out.println("Exiting run() with valid child workers still in progress");
             parent.recordResult(false, instanceId, derivationTree);
         }
     }
@@ -121,21 +129,21 @@ public class PDARuleProcessor {
         {
             CFGSymbol in = rIter.next();
             aStack.push(in);
-            System.out.println("Push Stack(" + aStack + ") Pushed " + in.print());
+            //System.out.println("Push Stack(" + aStack + ") Pushed " + in.print());
         }
     }
 
     private Stack<CFGSymbol> cloneStack(Stack<CFGSymbol> oldStack)
     {
         Stack<CFGSymbol> newStack = new Stack<>();
-        System.out.println("Clone old stack (" + oldStack + ") size = " + oldStack.size());
+        //System.out.println("Clone old stack (" + oldStack + ") size = " + oldStack.size());
 
         for(int i = 0; i < oldStack.size(); i++)
         {
             //System.out.println("Clone oldStack[" + i + "]=" + oldStack.elementAt(i).print());
             CFGSymbol in = oldStack.elementAt(i);
             newStack.push(in);
-            System.out.println("Clone Stack(" + newStack + ") Pushed " + in.print());
+            //System.out.println("Clone Stack(" + newStack + ") Pushed " + in.print());
         }
         return newStack;
     }
@@ -143,7 +151,7 @@ public class PDARuleProcessor {
     private LinkedList<String> cloneDerivation(LinkedList<String> oldDerivation)
     {
         LinkedList<String> newDerivation = new LinkedList<>();
-        System.out.println("Clone old derivation of size = " + oldDerivation.size());
+        //System.out.println("Clone old derivation of size = " + oldDerivation.size());
 
         Iterator<String> iter = oldDerivation.iterator();
         while(iter.hasNext())
@@ -168,20 +176,20 @@ public class PDARuleProcessor {
         {
             // If we see end of string symbol on the stack AND we are indeed at the end
             // of the input string, we are successful
-            System.out.println("**ACCEPTED**");
+            //System.out.println("**ACCEPTED**");
             result = EvalResult.TERMINAL_SUCCESS;
         }
         else if(inputPosition >= inputString.length())
         {
             // We still have some stuff on the stack, but we are out of input string.
             // This is a hard failure case with no rewind, so this path is done.
-            System.out.println("**FAILURE** Input string has been exhausted");
+            //System.out.println("**FAILURE** Input string has been exhausted");
             result = EvalResult.TERMINAL_FAILURE;
         }
         else if(aSym.isEpsilon())
         {
             // This should never happen, so send a failure and bail so we can debug it
-            System.out.println("**FAILURE** This should never happen go and debug");
+            //System.out.println("**FAILURE** This should never happen go and debug");
             result = EvalResult.TERMINAL_FAILURE;
         }
         else if(aSym.isTerminal())
@@ -189,7 +197,7 @@ public class PDARuleProcessor {
             // Compare our stack terminal to the top of the string since this is right-handed validation
             if(aSym.symbol == inputString.charAt(inputPosition))
             {
-                System.out.println("MATCH stack top=" + aSym.symbol + " input char=" + inputString.charAt(inputPosition));
+                //System.out.println("MATCH stack top=" + aSym.symbol + " input char=" + inputString.charAt(inputPosition));
 
                 // Pop the stack and move the position of the string up one
                 CFGSymbol outSym = cfgStack.pop();
@@ -203,7 +211,7 @@ public class PDARuleProcessor {
             else
             {
                 // The input string terminal doesn't match with our stack symbol.  We can't progress any farther
-                System.out.println("**FAILURE** Mismatching terminals in stack/input");
+                //System.out.println("**FAILURE** Mismatching terminals in stack/input");
                 result = EvalResult.TERMINAL_FAILURE;
             }
         }

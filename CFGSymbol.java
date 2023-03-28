@@ -30,4 +30,6 @@ public class CFGSymbol {
         return String.valueOf(symbol);
     }
 
+    public String toString() { return print(); }
+
 }

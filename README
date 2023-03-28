@@ -6,3 +6,4 @@
 //  "G1.cfg" "00000#11111"  -> single derivation, easy grammar
 //  "G2.cfg" "(a+a+a)"      -> single derivation, more complex grammar
 //  "G3.cfg" "a+axa"        -> multiple derivations, ambiguous grammar
+//  "G4.cfg" "1010110101"   -> single derivation, proper use of epsilon

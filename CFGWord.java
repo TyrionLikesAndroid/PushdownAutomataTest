@@ -19,8 +19,13 @@ public class CFGWord {
     public LinkedList<CFGSymbol> getSymbols() {
         return symbols;
     }
+
     public String print() {
         return word;
+    }
+
+    public boolean isEpsilon() {
+        return symbols.peekFirst().isEpsilon();
     }
 
 }

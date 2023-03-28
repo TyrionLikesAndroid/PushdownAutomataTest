@@ -48,20 +48,23 @@ public class PushdownAutomaton {
 
             ContextFreeGrammarLoader.CFGRule aRule = startIter.next();
 
-            // Create stack and push our start rule onto the stack with the $
-            Stack<CFGSymbol> startingStack = new Stack<>();
-            startingStack.push(new CFGSymbol('$'));
-            PDARuleProcessor.pushStackRule(startingStack, aRule.word);
-            System.out.println("Initial stack (" + startingStack + ")");
+            // Filter out epsilon since it's not a valid start variable
+            if(! aRule.word.isEpsilon()) {
+                // Create stack and push our start rule onto the stack with the $
+                Stack<CFGSymbol> startingStack = new Stack<>();
+                startingStack.push(new CFGSymbol('$'));
+                PDARuleProcessor.pushStackRule(startingStack, aRule.word);
+                //System.out.println("Initial stack (" + startingStack + ")");
 
-            // Start the derivation tree based on these first two steps
-            LinkedList<String> derivation = new LinkedList<>();
-            derivation.add(aRule.id);
-            derivation.add(aRule.word.print());
+                // Start the derivation tree based on these first two steps
+                LinkedList<String> derivation = new LinkedList<>();
+                derivation.add(aRule.id);
+                derivation.add(aRule.word.print());
 
-            // Create a PDA Rule Processor and tell it to run
-            addWorker(new PDARuleProcessor(this, inString, 0, cfgLoader.getGrammarDictionary(),
-                    startingStack, derivation, ""));
+                // Create a PDA Rule Processor and tell it to run
+                addWorker(new PDARuleProcessor(this, inString, 0, cfgLoader.getGrammarDictionary(),
+                        startingStack, derivation, ""));
+            }
         }
 
         // Start the execute loop
@@ -111,7 +114,8 @@ public class PushdownAutomaton {
 
             if(workerResult.result)
             {
-                System.out.println("Successful Derivation from PDARuleProcessor[" + workerResult.id + "]");
+                System.out.println("Successful Derivation from PDARuleProcessor[" + workerResult.id +
+                        "] out of [" + PDARuleProcessor.startId + "]");
                 printDerivationTree(workerResult.derivationTree);
 
                 if(output)
