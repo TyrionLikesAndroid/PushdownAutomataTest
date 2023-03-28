@@ -7,3 +7,4 @@
 //  "G2.cfg" "(a+a+a)"      -> single derivation, more complex grammar
 //  "G3.cfg" "a+axa"        -> multiple derivations, ambiguous grammar
 //  "G4.cfg" "1010110101"   -> single derivation, proper use of epsilon
+//  "G5.cfg" "a+axa"        -> same grammar as G3 but in Chomsky Normal Form
