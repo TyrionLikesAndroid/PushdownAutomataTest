@@ -11,6 +11,7 @@ public class PDARuleProcessor {
     public int instanceId;
     LinkedList<String> derivationTree;
     private String terminalProgress;
+    static boolean smartMode = false;
 
     private enum EvalResult
     {
@@ -86,15 +87,52 @@ public class PDARuleProcessor {
             // Iterate over all the rules and setup new RP classes
             for(int i = 0; i < rules.size(); i++)
             {
-                //System.out.println("Rules iteration " + i + ", "+ rules.get(i).print());
+                CFGWord nextRule = rules.get(i);
+                //System.out.println("Rules iteration " + i + ", "+ nextRule.print());
+
+                // If smart mode is on, determine if this rule is likely to make any progress
+                if(smartMode)
+                {
+                    boolean continueSignal = false;
+                    Map<String, Integer> terminals = nextRule.getTerminalCount();
+                    Iterator<String> termIter = terminals.keySet().iterator();
+                    while(termIter.hasNext())
+                    {
+                        String term = termIter.next();
+                        int termCount = terminals.get(term);
+                        //System.out.println("Checking terminal:" + term + " count:"+ termCount);
+
+                        // Count the number of occurances of this terminal in our remaining
+                        // input string.
+                        int inputCount = 0;
+                        for (int k = inputPosition; k < inputString.length(); k++) {
+                            if (inputString.charAt(k) == term.charAt(0)) {
+                                inputCount++;
+                            }
+                        }
+
+                        // If we have more terminals in the rule than the string, there is no reason
+                        // to perform the replacement because the terminals cannot be consumed
+                        if(termCount > inputCount)
+                        {
+                            // Break out of the rule analysis, it's not worth pursuing
+                            //System.out.println("Bypass rule with term:" + term + " count:"+ termCount + " inputCount:" + inputCount);
+                            continueSignal = true;
+                            break;
+                        }
+                    }
+                    // Continue to the next rule in the ruleset
+                    if(continueSignal)
+                        continue;
+                }
 
                 // Make a copy of the stack
                 Stack<CFGSymbol> newStack = cloneStack(cfgStack);
 
                 // If the focal rule is epsilon, just skip the part where we push the
                 // new stack rule and continue.  There is nothing to replace for epsilon
-                if(! rules.get(i).isEpsilon())
-                    pushStackRule(newStack, rules.get(i));
+                if(! nextRule.isEpsilon())
+                    pushStackRule(newStack, nextRule);
 
                 // Update the derivation tree with the latest progress
                 ListIterator<CFGSymbol> newIter = newStack.listIterator(newStack.size());
@@ -107,7 +145,7 @@ public class PDARuleProcessor {
 
                 // Make a copy of the derivation tree, giving some extra traceability for epsilon
                 LinkedList<String> newDerivation = cloneDerivation(derivationTree);
-                if(rules.get(i).isEpsilon())
+                if(nextRule.isEpsilon())
                     newDeriveString = newDeriveString.concat(" (" + out.print() + "=ε)");
 
                 newDerivation.add(newDeriveString);

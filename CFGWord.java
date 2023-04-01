@@ -28,4 +28,23 @@ public class CFGWord {
         return symbols.peekFirst().isEpsilon();
     }
 
+    public Map<String, Integer> getTerminalCount()
+    {
+        Map<String, Integer> out = new HashMap<>();
+        Iterator<CFGSymbol> iter = symbols.iterator();
+        while(iter.hasNext())
+        {
+            CFGSymbol aSym = iter.next();
+            if(aSym.isTerminal() && (! aSym.isEpsilon()))
+            {
+                int count = 0;
+                if(out.containsKey(aSym.print()))
+                    count = out.get(aSym.print());
+
+                out.put(aSym.print(), ++count);
+            }
+        }
+        return out;
+    }
+
 }
